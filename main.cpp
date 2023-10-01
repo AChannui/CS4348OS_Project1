@@ -3,9 +3,15 @@
 #include <unistd.h>
 #include <string>
 #include <sstream>
-int debug = 100;
+
+int debug = 1000;
+bool interrupt_disable = false;
 
 int read_memory(int write_fd, int read_fd, int location) {
+   if (location > 999 && !interrupt_disable) {
+      throw std::out_of_range("location out of user range");
+   }
+
    std::string write_packet;
    write_packet = "0 " + std::to_string(location) + "\n";
    write(write_fd, &write_packet, write_packet.size());
@@ -31,6 +37,9 @@ int read_memory(int write_fd, int read_fd, int location) {
 }
 
 void write_memory(int write_fd, int read_fd, int location, int data) {
+   if(location > 999 && !interrupt_disable){
+      throw std::out_of_range("location out of user range");
+   }
    std::string write_packet;
    write_packet = "1 " + std::to_string(location) + " " + std::to_string(data) + "\n";
    write(write_fd, &write_packet, write_packet.size());
@@ -94,7 +103,6 @@ void spawn_memory(int &write_pipe, int &read_pipe, const std::string& file_name)
 }
 
 void cpu_instructions(int write_fd, int read_fd) {
-   bool interrupt_disable = false;
    int PC = 0;
    int IR = 0;
    int AC = 0;
@@ -148,8 +156,7 @@ void cpu_instructions(int write_fd, int read_fd) {
          }
 
          case 6: {
-            int SP_addr = read_memory(write_fd, read_fd, SP);
-            AC = read_memory(write_fd, read_fd, SP_addr + X);
+            AC = read_memory(write_fd, read_fd, SP + X);
             break;
          }
 
@@ -256,15 +263,15 @@ void cpu_instructions(int write_fd, int read_fd) {
             PC++;
             int addr = read_memory(write_fd, read_fd, PC);
             PC++;
+            SP--;
             write_memory(write_fd, read_fd, SP, PC);
             PC = addr;
-            SP--;
             continue;
          }
 
          case 24: {
-            SP++;
             PC = read_memory(write_fd, read_fd, SP);
+            SP++;
             break;
          }
 
@@ -279,26 +286,27 @@ void cpu_instructions(int write_fd, int read_fd) {
          }
 
          case 27: {
-            write_memory(write_fd, read_fd, SP, AC);
             SP--;
+            write_memory(write_fd, read_fd, SP, AC);
             break;
          }
 
          case 28: {
-            SP++;
             AC = read_memory(write_fd, read_fd, SP);
+            SP++;
             break;
          }
 
          case 29: {
+            interrupt_disable = true;
             int SP_user = SP;
-            SP = 2000;
+            SP = 1999;
             write_memory(write_fd, read_fd, SP, SP_user);
+            PC++;
             SP--;
             write_memory(write_fd, read_fd, SP, PC);
             PC = 1500;
-            interrupt_disable = true;
-            break;
+            continue;
          }
 
          case 30: {
@@ -307,12 +315,15 @@ void cpu_instructions(int write_fd, int read_fd) {
             SP++;
             SP = read_memory(write_fd, read_fd, SP);
             interrupt_disable = false;
-            break;
+            continue;
          }
 
          case 50: {
             exit_memory(write_fd);
-            exit(1);
+            if(debug > 10){
+               std::cout << "exit processed" << std::endl;
+            }
+            exit(0);
          }
       }
       PC++;
@@ -329,7 +340,12 @@ int main(int argc, char *argv[]) {
    int write_fd;
    int read_fd;
    spawn_memory(write_fd, read_fd, file_name);
-   cpu_instructions(write_fd, read_fd);
+   try{
+      cpu_instructions(write_fd, read_fd);
+   }
+   catch(const std::out_of_range &exc){
+      std::cout << "terminating with: " << exc.what() << std::endl;
+   }
 
 
    //process

@@ -3,7 +3,19 @@
 #include <string>
 #include <sstream>
 
-int debug = 100;
+int debug = 1;
+
+void print_memory(int memory[]){
+   for(int i = 0; i < 2000; i++){
+      if(i % 10 == 0){
+         std::cout << i << ": ";
+      }
+      std:: cout << memory[i] << ", ";
+      if((i + 1) % 10 == 0){
+         std::cout << std::endl;
+      }
+   }
+}
 
 void readFile(const std::string &file_name, int memory[]) {
    if (debug > 10) {
@@ -30,9 +42,9 @@ void readFile(const std::string &file_name, int memory[]) {
          }
          continue;
       }
-         // check for empty line
-      else if (line.empty()) {
-
+         // check for empty line or if there is no content
+      else if (line.empty() || line[0] == ' ') {
+         continue;
       }
          // should be data or opcode at this point and will save it off into memory and ignore
       else if (line.find(' ')) {
@@ -57,6 +69,9 @@ int main(int argc, char *argv[]) {
    int memory[2000];
    memset(memory, 0, sizeof(memory));
    readFile(file_name, memory);
+   if(debug > 200){
+      print_memory(memory);
+   }
    std::string input_string;
    while (getline(std::cin, input_string)) {
       // getting type of operation and memory location
@@ -69,10 +84,13 @@ int main(int argc, char *argv[]) {
       int location = std::stoi(temp);
 
       if(operation == 2){
-         exit(1);
+         if(debug > 10){
+            std::cout << "exit processed" << std::endl;
+         }
+         exit(0);
       }
       // checking location
-      else if (location < 0 || location > 2000) {
+      else if (location < 0 || location > 1999) {
          output = "0";
 
       }
