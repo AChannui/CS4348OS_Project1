@@ -4,8 +4,10 @@
 #include <cstring>
 #include <sstream>
 
+// debug tool
 int debug = 1;
 
+// debug tool
 void print_memory(int memory[]){
    for(int i = 0; i < 2000; i++){
       if(i % 10 == 0){
@@ -18,15 +20,19 @@ void print_memory(int memory[]){
    }
 }
 
+// parses file and puts it into memory
 void readFile(const std::string &file_name, int memory[]) {
+   // debug tool
    if (debug > 10) {
       std::cerr << "Reading file '" << file_name << "'" << std::endl;
    }
+   // makes the file into a stream
    std::ifstream file(file_name);
    if (!file.is_open()) {
       std::cerr << "Failed to open File" << std::endl;
       return;
    }
+   // reads file line by line
    int index = 0;
    std::string line;
    while (getline(file, line)) {
@@ -68,17 +74,22 @@ int main(int argc, char *argv[]) {
    }
    std::string file_name = argv[1];
    int memory[2000];
+   // set memory to 0s
    std::memset(memory, 0, sizeof(memory));
    readFile(file_name, memory);
+   // debug tool
    if(debug > 200){
       print_memory(memory);
    }
    std::string input_string;
+   // debug tool
    if(debug > 100)
    {
       std::cerr << "starting getline loop" << std::endl;
    }
+   // packets come as one line, and it gets a whole line at a time
    while (getline(std::cin, input_string)) {
+      // debug tool
       if(debug > 100){
          std::cerr << "getting new line = " << input_string << std::endl;
       }
@@ -92,19 +103,20 @@ int main(int argc, char *argv[]) {
       input_stream >> temp;
       int location = std::stoi(temp);
 
+      // exit case
       if(operation == 2){
          if(debug > 10){
             std::cerr << "exit processed" << std::endl;
          }
          exit(0);
       }
-      // checking location
+      // checking for useless line
       else if (location < 0 || location > 1999) {
          output = "0";
-
       }
 
       // 0 is a read and 1 is a write operation
+      // read
       else if (operation == 0) {
          // formatting line
          output = "1 " + std::to_string(memory[location]);
@@ -112,6 +124,7 @@ int main(int argc, char *argv[]) {
             std::cerr << "reading location - "<< location << " data - " << memory[location] << std::endl;
          }
       }
+      // write
       else if (operation == 1) {
          // getting data
          input_stream >> temp;
@@ -121,9 +134,11 @@ int main(int argc, char *argv[]) {
             std::cerr << "writing location - " << location << " data - " << std::stoi(temp) << std::endl;
          }
       }
+      // failure
       else {
          output = "0";
       }
+      // debug tool
       if(debug > 100){
          std::cerr << "sending response = " << output << std::endl;
       }
