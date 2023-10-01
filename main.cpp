@@ -161,6 +161,7 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
             write_memory(write_fd, read_fd, SP, SP_user);
             SP--;
             write_memory(write_fd, read_fd, SP, PC);
+            SP--;
             PC = 1000;
             continue;
          }
@@ -367,11 +368,13 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
             SP--;
             write_memory(write_fd, read_fd, SP, PC);
             PC = 1500;
+            SP--;
             continue;
          }
 
          case 30: {
 
+            SP++;
             PC = read_memory(write_fd, read_fd, SP);
             SP++;
             SP = read_memory(write_fd, read_fd, SP);
