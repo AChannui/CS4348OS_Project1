@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <sstream>
 
 int debug = 1;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]) {
    }
    std::string file_name = argv[1];
    int memory[2000];
-   memset(memory, 0, sizeof(memory));
+   std::memset(memory, 0, sizeof(memory));
    readFile(file_name, memory);
    if(debug > 200){
       print_memory(memory);
