@@ -52,6 +52,9 @@ int read_memory(int write_fd, int read_fd, int location) {
 
    std::string write_packet;
    write_packet = "0 " + std::to_string(location) + "\n";
+   if(debug > 100){
+      std::cout << write_packet << std::endl;
+   }
    write(write_fd, &write_packet, write_packet.size());
    char read_char;
    std::string read_packet;
@@ -61,6 +64,9 @@ int read_memory(int write_fd, int read_fd, int location) {
          break;
       }
       read_packet += read_char;
+   }
+   if(debug > 100){
+      std::cout << read_packet << std::endl;
    }
    std::istringstream read_stream(read_packet);
    std::string temp;
@@ -80,6 +86,9 @@ void write_memory(int write_fd, int read_fd, int location, int data) {
    }
    std::string write_packet;
    write_packet = "1 " + std::to_string(location) + " " + std::to_string(data) + "\n";
+   if(debug > 100){
+      std::cout << write_packet << std::endl;
+   }
    write(write_fd, &write_packet, write_packet.size());
    char read_char;
    std::string read_packet;
@@ -89,6 +98,9 @@ void write_memory(int write_fd, int read_fd, int location, int data) {
          break;
       }
       read_packet += read_char;
+   }
+   if(debug > 100){
+      std::cout << read_packet << std::endl;
    }
    std::istringstream read_stream(read_packet);
    std::string temp;
