@@ -4,8 +4,46 @@
 #include <string>
 #include <sstream>
 
-int debug = 1000;
+#include <map>
+
+int debug = 10;
 bool interrupt_disable = false;
+
+std::map<int, const char*> NumToOpcode;
+
+void init_num_to_opcode() {
+   NumToOpcode[1] = "Load value";
+   NumToOpcode[2] = "Load addr";
+   NumToOpcode[3] = "LoadInd addr";
+   NumToOpcode[4] = "LoadIdxX addr";
+   NumToOpcode[5] = "LoadIdxY addr";
+   NumToOpcode[6] = "LoadSpX";
+   NumToOpcode[7] = "Store addr";
+   NumToOpcode[8] = "Get";
+   NumToOpcode[9] = "Put port";
+   NumToOpcode[10] = "AddX";
+   NumToOpcode[11] = "AddY";
+   NumToOpcode[12] = "SubX";
+   NumToOpcode[13] = "SubY";
+   NumToOpcode[14] = "CopyToX";
+   NumToOpcode[15] = "CopyFromX";
+   NumToOpcode[16] = "CopyToY";
+   NumToOpcode[17] = "CopyFromY";
+   NumToOpcode[18] = "CopyToSp";
+   NumToOpcode[19] = "CopyFromSp";
+   NumToOpcode[20] = "Jump addr";
+   NumToOpcode[21] = "JumpIfEqual addr";
+   NumToOpcode[22] = "JumpIfNotEqual addr";
+   NumToOpcode[23] = "Call addr";
+   NumToOpcode[24] = "Ret";
+   NumToOpcode[25] = "IncX";
+   NumToOpcode[26] = "DecX";
+   NumToOpcode[27] = "Push";
+   NumToOpcode[28] = "Pop";
+   NumToOpcode[29] = "Int";
+   NumToOpcode[30] = "IRet";
+   NumToOpcode[50] = "End";
+}
 
 int read_memory(int write_fd, int read_fd, int location) {
    if (location > 999 && !interrupt_disable) {
@@ -113,7 +151,11 @@ void cpu_instructions(int write_fd, int read_fd) {
    while (true) {
       IR = read_memory(write_fd, read_fd, PC);
       if(debug > 10){
-         std::cerr <<"PC = " <<  PC << ", IR = " << IR << ", AC = " << AC << ", X = " << X << ", Y = " << Y << ", SP = " << SP << std::endl;
+         const char * opname = "ERR";
+         if (NumToOpcode.count(IR)) {
+            opname = NumToOpcode[IR];
+         }
+         std::cerr <<"PC = " <<  PC << ", IR = " << IR << "(" << opname << ")" << ", AC = " << AC << ", X = " << X << ", Y = " << Y << ", SP = " << SP << std::endl;
       }
       if(X > 25){
 
@@ -272,7 +314,7 @@ void cpu_instructions(int write_fd, int read_fd) {
          case 24: {
             PC = read_memory(write_fd, read_fd, SP);
             SP++;
-            break;
+            continue;
          }
 
          case 25: {
@@ -332,7 +374,7 @@ void cpu_instructions(int write_fd, int read_fd) {
 }
 
 int main(int argc, char *argv[]) {
-
+   init_num_to_opcode();
    // get arguments
    std::string file_name = argv[1];
    //int timer = std::stoi(argv[1]);
