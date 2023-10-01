@@ -6,7 +6,7 @@
 
 #include <map>
 
-int debug = 200;
+int debug = 0;
 bool interrupt_disable = false;
 
 std::map<int, const char *> NumToOpcode;
@@ -162,7 +162,8 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
    int timer_count = 0;
    std::string memory_request;
    while (true) {
-      if (timer_count >= timer_interval) {
+      timer_count++;
+      if ((timer_count % timer_interval) == 0) {
          if (!interrupt_disable) {
             if (debug > 20) {
                std::cerr << "invoking timer interrupt" << std::endl;
@@ -177,8 +178,8 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
             PC = 1000;
             continue;
          }
+         timer_count = 0;
       }
-      timer_count++;
       IR = read_memory(write_fd, read_fd, PC);
       if (debug > 10) {
          const char *opname = "ERR";
@@ -393,7 +394,6 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
             SP++;
             SP = read_memory(write_fd, read_fd, SP);
             interrupt_disable = false;
-            timer_count = 0;
             continue;
          }
 
