@@ -6,10 +6,10 @@
 
 #include <map>
 
-int debug = 1;
+int debug = 200;
 bool interrupt_disable = false;
 
-std::map<int, const char*> NumToOpcode;
+std::map<int, const char *> NumToOpcode;
 
 void init_num_to_opcode() {
    NumToOpcode[1] = "Load value";
@@ -52,10 +52,10 @@ int read_memory(int write_fd, int read_fd, int location) {
 
    std::string write_packet;
    write_packet = "0 " + std::to_string(location) + "\n";
-   if(debug > 100){
-      std::cout << write_packet << std::endl;
+   if (debug > 500) {
+      std::cerr << "write packet = " << write_packet << std::endl;
    }
-   write(write_fd, &write_packet, write_packet.size());
+   write(write_fd, write_packet.c_str(), write_packet.size());
    char read_char;
    std::string read_packet;
    while (true) {
@@ -65,8 +65,8 @@ int read_memory(int write_fd, int read_fd, int location) {
       }
       read_packet += read_char;
    }
-   if(debug > 100){
-      std::cout << read_packet << std::endl;
+   if (debug > 500) {
+      std::cerr << "read packet = " << read_packet << std::endl;
    }
    std::istringstream read_stream(read_packet);
    std::string temp;
@@ -81,15 +81,15 @@ int read_memory(int write_fd, int read_fd, int location) {
 }
 
 void write_memory(int write_fd, int read_fd, int location, int data) {
-   if(location > 999 && !interrupt_disable){
+   if (location > 999 && !interrupt_disable) {
       throw std::out_of_range("location out of user range");
    }
    std::string write_packet;
    write_packet = "1 " + std::to_string(location) + " " + std::to_string(data) + "\n";
-   if(debug > 100){
-      std::cout << write_packet << std::endl;
+   if (debug > 500) {
+      std::cerr << "write packet = " << write_packet << std::endl;
    }
-   write(write_fd, &write_packet, write_packet.size());
+   write(write_fd, write_packet.c_str(), write_packet.size());
    char read_char;
    std::string read_packet;
    while (true) {
@@ -99,8 +99,8 @@ void write_memory(int write_fd, int read_fd, int location, int data) {
       }
       read_packet += read_char;
    }
-   if(debug > 100){
-      std::cout << read_packet << std::endl;
+   if (debug > 500) {
+      std::cerr << "read packet = " << read_packet << std::endl;
    }
    std::istringstream read_stream(read_packet);
    std::string temp;
@@ -112,11 +112,11 @@ void write_memory(int write_fd, int read_fd, int location, int data) {
 
 void exit_memory(int write_fd) {
    std::string write_packet = "2";
-   write(write_fd, &write_packet, write_packet.size());
+   write(write_fd, write_packet.c_str(), write_packet.size());
 }
 
 
-void spawn_memory(int &write_pipe, int &read_pipe, const std::string& file_name) {
+void spawn_memory(int &write_pipe, int &read_pipe, const std::string &file_name) {
    int pipe_fd_CPU[2], pipe_fd_memory[2];
    int pipe_status_CPU, pipe_status_memory;
    pipe_status_CPU = pipe(pipe_fd_CPU);
@@ -162,9 +162,9 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
    int timer_count = 0;
    std::string memory_request;
    while (true) {
-      if(timer_count >= timer_interval){
-         if(!interrupt_disable){
-            if(debug > 20){
+      if (timer_count >= timer_interval) {
+         if (!interrupt_disable) {
+            if (debug > 20) {
                std::cerr << "invoking timer interrupt" << std::endl;
             }
             interrupt_disable = true;
@@ -180,14 +180,16 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
       }
       timer_count++;
       IR = read_memory(write_fd, read_fd, PC);
-      if(debug > 10){
-         const char * opname = "ERR";
+      if (debug > 10) {
+         const char *opname = "ERR";
          if (NumToOpcode.count(IR)) {
             opname = NumToOpcode[IR];
          }
-         std::cerr <<"PC = " <<  PC << ", IR = " << IR << "(" << opname << ")" << ", AC = " << AC << ", X = " << X << ", Y = " << Y << ", SP = " << SP << ", cycle = "<< timer_count << std::endl;
+         std::cerr << "PC = " << PC << ", IR = " << IR << "(" << opname << ")" << ", AC = " << AC
+                   << ", X = " << X << ", Y = " << Y << ", SP = " << SP << ", cycle = "
+                   << timer_count << std::endl;
       }
-      if(X > 25){
+      if (X > 25) {
 
       }
       switch (IR) {
@@ -369,7 +371,7 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
          }
 
          case 29: {
-            if(interrupt_disable){
+            if (interrupt_disable) {
                throw std::runtime_error("int called while interrupt active");
             }
             interrupt_disable = true;
@@ -397,7 +399,7 @@ void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
 
          case 50: {
             exit_memory(write_fd);
-            if(debug > 10){
+            if (debug > 10) {
                std::cout << "exit processed" << std::endl;
             }
             exit(0);
@@ -417,13 +419,13 @@ int main(int argc, char *argv[]) {
    int write_fd;
    int read_fd;
    spawn_memory(write_fd, read_fd, file_name);
-   try{
+   try {
       cpu_instructions(write_fd, read_fd, timer);
    }
-   catch(const std::out_of_range &exc){
+   catch (const std::out_of_range &exc) {
       std::cout << "terminating with: " << exc.what() << std::endl;
    }
-   catch(const std::runtime_error &exc){
+   catch (const std::runtime_error &exc) {
       std::cout << "terminating with: " << exc.what() << std::endl;
    }
 

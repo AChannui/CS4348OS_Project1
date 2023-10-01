@@ -9,11 +9,11 @@ int debug = 1;
 void print_memory(int memory[]){
    for(int i = 0; i < 2000; i++){
       if(i % 10 == 0){
-         std::cout << i << ": ";
+         std::cerr << i << ": ";
       }
-      std:: cout << memory[i] << ", ";
+      std::cerr << memory[i] << ", ";
       if((i + 1) % 10 == 0){
-         std::cout << std::endl;
+         std::cerr << std::endl;
       }
    }
 }
@@ -24,7 +24,7 @@ void readFile(const std::string &file_name, int memory[]) {
    }
    std::ifstream file(file_name);
    if (!file.is_open()) {
-      std::cout << "Failed to open File" << std::endl;
+      std::cerr << "Failed to open File" << std::endl;
       return;
    }
    int index = 0;
@@ -74,7 +74,15 @@ int main(int argc, char *argv[]) {
       print_memory(memory);
    }
    std::string input_string;
+   if(debug > 100)
+   {
+      std::cerr << "starting getline loop" << std::endl;
+   }
    while (getline(std::cin, input_string)) {
+      if(debug > 100){
+         std::cerr << "getting new line = " << input_string << std::endl;
+      }
+
       // getting type of operation and memory location
       std::string output;
       std::istringstream input_stream(input_string);
@@ -86,7 +94,7 @@ int main(int argc, char *argv[]) {
 
       if(operation == 2){
          if(debug > 10){
-            std::cout << "exit processed" << std::endl;
+            std::cerr << "exit processed" << std::endl;
          }
          exit(0);
       }
@@ -115,6 +123,9 @@ int main(int argc, char *argv[]) {
       }
       else {
          output = "0";
+      }
+      if(debug > 100){
+         std::cerr << "sending response = " << output << std::endl;
       }
       std::cout << output << std::endl;
    }
