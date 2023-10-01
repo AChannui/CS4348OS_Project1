@@ -6,7 +6,7 @@
 
 #include <map>
 
-int debug = 10;
+int debug = 1;
 bool interrupt_disable = false;
 
 std::map<int, const char*> NumToOpcode;
@@ -140,22 +140,39 @@ void spawn_memory(int &write_pipe, int &read_pipe, const std::string& file_name)
    read_pipe = pipe_fd_CPU[0];
 }
 
-void cpu_instructions(int write_fd, int read_fd) {
+void cpu_instructions(int write_fd, int read_fd, int timer_interval) {
    int PC = 0;
    int IR = 0;
    int AC = 0;
    int X = 0;
    int Y = 0;
    int SP = 999;
+   int timer_count = 0;
    std::string memory_request;
    while (true) {
+      if(timer_count >= timer_interval){
+         if(!interrupt_disable){
+            if(debug > 20){
+               std::cerr << "invoking timer interrupt" << std::endl;
+            }
+            interrupt_disable = true;
+            int SP_user = SP;
+            SP = 1999;
+            write_memory(write_fd, read_fd, SP, SP_user);
+            SP--;
+            write_memory(write_fd, read_fd, SP, PC);
+            PC = 1000;
+            continue;
+         }
+      }
+      timer_count++;
       IR = read_memory(write_fd, read_fd, PC);
       if(debug > 10){
          const char * opname = "ERR";
          if (NumToOpcode.count(IR)) {
             opname = NumToOpcode[IR];
          }
-         std::cerr <<"PC = " <<  PC << ", IR = " << IR << "(" << opname << ")" << ", AC = " << AC << ", X = " << X << ", Y = " << Y << ", SP = " << SP << std::endl;
+         std::cerr <<"PC = " <<  PC << ", IR = " << IR << "(" << opname << ")" << ", AC = " << AC << ", X = " << X << ", Y = " << Y << ", SP = " << SP << ", cycle = "<< timer_count << std::endl;
       }
       if(X > 25){
 
@@ -192,8 +209,7 @@ void cpu_instructions(int write_fd, int read_fd) {
          case 5: {
             PC++;
             int addr = read_memory(write_fd, read_fd, PC);
-            int indirect_addr = read_memory(write_fd, read_fd, addr + Y);
-            AC = read_memory(write_fd, read_fd, indirect_addr);
+            AC = read_memory(write_fd, read_fd, addr + Y);
             break;
          }
 
@@ -340,6 +356,9 @@ void cpu_instructions(int write_fd, int read_fd) {
          }
 
          case 29: {
+            if(interrupt_disable){
+               throw std::runtime_error("int called while interrupt active");
+            }
             interrupt_disable = true;
             int SP_user = SP;
             SP = 1999;
@@ -357,6 +376,7 @@ void cpu_instructions(int write_fd, int read_fd) {
             SP++;
             SP = read_memory(write_fd, read_fd, SP);
             interrupt_disable = false;
+            timer_count = 0;
             continue;
          }
 
@@ -377,15 +397,18 @@ int main(int argc, char *argv[]) {
    init_num_to_opcode();
    // get arguments
    std::string file_name = argv[1];
-   //int timer = std::stoi(argv[1]);
+   int timer = std::stoi(argv[2]);
 
    int write_fd;
    int read_fd;
    spawn_memory(write_fd, read_fd, file_name);
    try{
-      cpu_instructions(write_fd, read_fd);
+      cpu_instructions(write_fd, read_fd, timer);
    }
    catch(const std::out_of_range &exc){
+      std::cout << "terminating with: " << exc.what() << std::endl;
+   }
+   catch(const std::runtime_error &exc){
       std::cout << "terminating with: " << exc.what() << std::endl;
    }
 
